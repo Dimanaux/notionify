@@ -10,7 +10,8 @@
 
 `*` - required if you have incompatible arch.\
 You have to compile `Main.go` by yourself (use `install_go.sh`
-- requires [go](https://golang.org/dl/) installed).
+- requires [go](https://golang.org/dl/) installed).\
+Precompiled for Mac OS X.
 
 ## How to:
 ### 1. Export BambooHR data to CSV.

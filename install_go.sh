@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 go get github.com/kjk/notionapi
-go build Main.go
+go build Main.go -o Main
