@@ -9,8 +9,8 @@
     + notionapi
 
 `*` - required if you have incompatible arch.\
-You have to compile `Main.go` by yourself (use `install_go.sh`
-- requires [go](https://golang.org/dl/) installed).\
+You have to compile `Main.go` by yourself (use `install_go.sh` -
+requires [go](https://golang.org/dl/) installed).\
 Precompiled for Mac OS X.
 
 ## How to:
