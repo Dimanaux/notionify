@@ -10,7 +10,7 @@
 
 `*` - required if you have incompatible arch.\
 You have to compile `Main.go` by yourself (use `install_go.sh` -
-requires [go](https://golang.org/dl/) installed).\
+requires [go](https://golang.org/dl/)).\
 Precompiled for Mac OS X.
 
 ## How to:
@@ -29,6 +29,8 @@ For example my
 
 - BambooHR API Key:
 `7c0a82a3578120bd6ee1da05ca10a2aa9806ced1`
+
+Run it! `ruby app/main.rb`
 
 You get all files in [files directory](files).
 
@@ -55,6 +57,8 @@ For example my
 
 - Link to view:
 `https://www.notion.so/bamboohrcsvdemo/a4898a3b2e9b4faaba234553f34a8076?v=d17b517d1509ae068fcdff61380eec29`
+
+Run it: `./notionify.py`
 
 ### 4. Prettify you table.
 Now you can drop temporarily columns (CommentsJson, Links), give types to other columns.
