@@ -33,7 +33,7 @@ class Model
   def self.csv_serialize!(models)
     raise IndexError, "There must be at least 1 model!" if models.empty?
 
-    CSV.open(file_name(models.first), "wb") do |csv|
+    CSV.open(file_name(models.first), "wb+") do |csv|
       csv << header(models.first)
       models.each { |model| csv << model.to_a }
     end
