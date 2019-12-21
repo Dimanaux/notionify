@@ -27,7 +27,8 @@ class Model
   end
 
   def self.file_name(model, extension = 'csv')
-    "../files/#{model.class.to_s}.#{extension}"
+    files_dir = File.expand_path(__dir__ + "/../../../files")
+    "#{files_dir}/#{model.class.to_s}.#{extension}"
   end
 
   def self.csv_serialize!(models)
