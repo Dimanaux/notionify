@@ -60,5 +60,5 @@ For example my
 
 Run it: `./notionify.py`
 
-### 4. Prettify you table.
+### 4. Prettify your table.
 Now you can drop temporarily columns (CommentsJson, Links), give types to other columns.

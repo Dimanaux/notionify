@@ -26,14 +26,15 @@ class Applicant < Model
         'Added' => application.appliedDate,
         'Id' => application.id,
         'CommentsJson' => application.comments_hash.to_json,
-        'Status' => application.status
+        'Status' => application.status,
+        'RelPaths' => application.attachments.map(&:relative_path).join(':')
     }
     read_from_hash! hash
   end
 
   @fields = %I[
     Name Role Stage Email Hiring_Manager Attachments Website Skills Location
-    Employment Source Added CommentsJson Links Status
+    Employment Source Added CommentsJson Links Status RelPaths
   ]
 
   class << self

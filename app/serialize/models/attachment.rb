@@ -13,12 +13,13 @@ class Attachment < Model
   end
 
   def write(parent_dir_path)
-    self.dir = "#{parent_dir_path}/#{applicationId}"
+    self.dir = "#{parent_dir_path}/#{self.applicationId}"
     FileUtils.mkdir_p dir
     self.extension = name.split('.').last
     self.file_name = "#{dir}/#{id}.#{extension}"
+    self.relative_path = "./files/#{self.applicationId}/#{id}.#{extension}"
     self.absolute_path = File.expand_path(self.file_name)
-    File.write(self.absolute_path, content, mode: "wb")
+    File.write(self.absolute_path, content, mode: "wb+")
   end
 
   def to_s
@@ -28,7 +29,7 @@ class Attachment < Model
   @fields = %I[
     file_name application
     id applicationId name type length
-    dir extension absolute_path
+    dir extension absolute_path relative_path
   ]
 
   class << self

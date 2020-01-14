@@ -13,11 +13,13 @@ view_link = '?'
 
 def get_attachments(links_line):
     links = []
-    if links_line not in  ('', None):
+    if links_line not in ('', None):
         attachments = links_line.split(':')
         for a in attachments:
             link = upload(a)
             links.append(link)
+    if links:
+        links.append('pull me up if no access')
     return links
 
 
@@ -37,18 +39,23 @@ cv = client.get_collection_view(view_link)
 rows = cv.build_query().execute()
 
 for row in rows:
-    row.attachments=get_attachments(row.links)
+    try:
+        row.attachments = get_attachments(row.relpaths)
+    except:
+        pass
+    try:
+        comments = json.loads(row.commentsjson)['comments']
+        comments.sort(key=lambda d: d['date'])
 
-    comments = json.loads(row.commentsjson)['comments']
-    comments.sort(key=lambda d: d['date'])
-
-    row.children.add_new(HeaderBlock, title='# Comments')
-    parents = {}
-    for comment in comments:
-        text = format_comment(comment)
-        if comment['parent_id'] not in (None, ''):
-            parent_id = int(comment['parent_id'])
-            parents[parent_id].children.add_new(BulletedListBlock, title=text)
-        else:
-            parent = row.children.add_new(BulletedListBlock, title=text)
-            parents[int(comment['id'])] = parent
+        row.children.add_new(HeaderBlock, title='# Comments')
+        parents = {}
+        for comment in comments:
+            text = format_comment(comment)
+            if comment['parent_id'] not in (None, ''):
+                parent_id = int(comment['parent_id'])
+                parents[parent_id].children.add_new(BulletedListBlock, title=text)
+            else:
+                parent = row.children.add_new(BulletedListBlock, title=text)
+                parents[int(comment['id'])] = parent
+    except:
+        pass

@@ -15,25 +15,32 @@ class Bamboo
   end
 
   def detailed_jobs
-    jobs.map { |j| job j['id'] }
+    jobs.map { |j| j['id'] }
+        .sort.uniq
+        .map { |id| job id }
   end
 
   def job(id)
     get_json("applicant_tracking/jobs/#{id}")
   end
 
-  def applications(page_limit = 15)
+  def applications
     applications = []
-    1.upto page_limit do |page|
+    page = 1
+    while true
       response = get_json('applicant_tracking/applications', page: page)
       applications += response['applications']
       break if response['paginationComplete']
+      page += 1
     end
     applications
   end
 
   def detailed_applications
-    applications.map { |a| application a['id'] }
+    applications
+        .map { |a| a['id'] }
+        .sort.uniq
+        .map { |id| application id }
   end
 
   def application(id)
@@ -46,14 +53,20 @@ class Bamboo
 
   def application_file(application_id, file_id)
     response = get("applicant_tracking/applications/#{application_id}/files/#{file_id}")
-    {
+    result = {
         'content' => response.body,
-        'name' => response.headers['content-disposition'].split("filename='")[1].split("'")[0],
         'type' => response.headers['content-type'],
         'length' => response.headers['content-length'].to_i,
         'applicationId' => application_id,
         'id' => file_id
     }
+    if response.headers['content-disposition']
+      result['name'] = response.headers['content-disposition'].split("filename='")[1].split("'")[0]
+    elsif response.headers['content-type']
+      extension = response.headers['content-type'].split(";")[0].split("/")[1]
+      result['name'] = "#{result['name']}.#{extension}"
+    end
+    result
   end
 
   private

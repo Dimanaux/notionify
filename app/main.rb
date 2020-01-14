@@ -8,6 +8,7 @@ require_relative 'serialize/models/comment'
 require_relative 'serialize/models/job'
 require_relative 'serialize/models/model'
 require_relative 'serialize/models/applicant'
+require_relative 'fake_bamboo'
 
 def comments_json(applications, api)
   comments = []
