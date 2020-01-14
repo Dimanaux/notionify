@@ -2,9 +2,12 @@
 
 require 'json'
 require 'httparty'
+require 'parallel'
 
 # BambooHR API Gateway
 class Bamboo
+  THREAD_COUNT = 10
+
   def initialize(company, api_key)
     self.company = company
     self.api_key = api_key
@@ -27,8 +30,8 @@ class Bamboo
   def applications
     applications = []
     page = 1
-    while true
-      response = get_json('applicant_tracking/applications', page: page)
+    loop do
+      response = get_json('applicant_tracking/applications', 'page' => page, 'applicationStatus' => 'ALL', 'jobStatusGroups' => 'ALL')
       applications += response['applications']
       break if response['paginationComplete']
       page += 1
@@ -37,10 +40,11 @@ class Bamboo
   end
 
   def detailed_applications
-    applications
-        .map { |a| a['id'] }
-        .sort.uniq
-        .map { |id| application id }
+    without_details = applications
+    Parallel.map(
+        without_details.map { |a| a['id'] }.sort.uniq,
+        in_threads: THREAD_COUNT
+    ) { |id| application id }
   end
 
   def application(id)
@@ -49,6 +53,55 @@ class Bamboo
 
   def application_comments(id)
     get_json("applicant_tracking/applications/#{id}/comments")
+  rescue
+    []
+  end
+
+  def comments_json(applications)
+    comments = []
+    Parallel.each(applications, in_threads: THREAD_COUNT) do |a|
+      comments_chunk = application_comments(a.id)
+      replies_chunk = []
+      comments_chunk.each do |comment|
+        comment['topLevel']['applicationId'] = a.id
+        comment['topLevel']['_application'] = a
+
+        if comment['replies']
+          comment['replies'].each do |reply|
+            reply['applicationId'] = a.id
+            reply['_application'] = a
+            replies_chunk << reply
+          end
+        end
+      end
+      comments += comments_chunk
+      comments += replies_chunk.map { |r| { 'topLevel' => r } }
+    end
+    comments
+  end
+
+  def fetch_file(application_id, file_id)
+    if file_id && file_id != ''
+      application_file(application_id, file_id)
+    end
+  end
+
+  def download_files!(applications)
+    attachments = []
+    Parallel.each(applications, in_threads: THREAD_COUNT) do |a|
+      resume = fetch_file(a.id, a.resumeFileId)
+      if resume
+        resume['application'] = a
+        attachments << write_file!(resume)
+      end
+
+      cover_letter = fetch_file(a.id, a.coverLetterFileId)
+      if cover_letter
+        cover_letter['application'] = a
+        attachments << write_file!(cover_letter)
+      end
+    end
+    attachments
   end
 
   def application_file(application_id, file_id)
@@ -102,7 +155,8 @@ class Bamboo
         basic_auth: auth,
         headers: {
             Accept: 'application/serialize'
-        }.merge(options[:headers] || {})
+        },
+        default_params: options
     }.merge(options.reject { |k, _| k == :headers })
   end
 
@@ -111,6 +165,6 @@ class Bamboo
   end
 
   def auth
-    {username: api_key, password: 'x'}
+    { username: api_key, password: 'x' }
   end
 end
