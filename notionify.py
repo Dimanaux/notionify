@@ -2,6 +2,8 @@
 
 import json
 from subprocess import Popen, PIPE
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from notion.client import NotionClient
 from notion.block import BulletedListBlock
@@ -19,7 +21,7 @@ def get_attachments(links_line):
             link = upload(a)
             links.append(link)
     if links:
-        links.append('pull me up if no access')
+        links.append('pull me if access error')
     return links
 
 
@@ -34,15 +36,14 @@ def format_comment(comment):
     return '{text}\n__by {author} on {date}__'.format(**comment)
 
 
-client = NotionClient(token_v2=token_v2)
-cv = client.get_collection_view(view_link)
-rows = cv.build_query().execute()
-
-for row in rows:
+def set_row_attachments(row):
     try:
         row.attachments = get_attachments(row.relpaths)
-    except:
+    except Exception:
         pass
+
+
+def set_row_comments(row):
     try:
         comments = json.loads(row.commentsjson)['comments']
         comments.sort(key=lambda d: d['date'])
@@ -57,5 +58,27 @@ for row in rows:
             else:
                 parent = row.children.add_new(BulletedListBlock, title=text)
                 parents[int(comment['id'])] = parent
-    except:
+    except Exception:
         pass
+
+
+async def process_rows_async():
+    client = NotionClient(token_v2=token_v2)
+    cv = client.get_collection_view(view_link)
+    rows = cv.build_query().execute()
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        loop = asyncio.get_event_loop()
+        comments_tasks = [loop.run_in_executor(executor, set_row_comments, r) for r in rows]
+        attachments_tasks = [loop.run_in_executor(executor, set_row_attachments, r) for r in rows]
+
+        for response in await asyncio.gather(*(comments_tasks + attachments_tasks)):
+            pass
+
+
+def main():
+    loop = asyncio.get_event_loop()
+    future = asyncio.ensure_future(process_rows_async())
+    loop.run_until_complete(future)
+
+main()
