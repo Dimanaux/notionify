@@ -9,12 +9,6 @@ require_relative 'serialize/models/job'
 require_relative 'serialize/models/model'
 require_relative 'serialize/models/applicant'
 
-def write_file!(file_json)
-  attachment = Attachment.new file_json
-  attachment.write("../files")
-  attachment
-end
-
 def main
   bamboo = Bamboo.new(company = '?',
                       api_key = '?')

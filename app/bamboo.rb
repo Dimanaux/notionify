@@ -52,14 +52,12 @@ class Bamboo
   end
 
   def application_comments(id)
-    get_json("applicant_tracking/applications/#{id}/comments")
-  rescue
-    []
+    get_json("applicant_tracking/applications/#{id}/comments") || []
   end
 
   def comments_json(applications)
     comments = []
-    Parallel.each(applications, in_threads: THREAD_COUNT) do |a|
+    Parallel.each(applications, in_threads: THREAD_COUNT / 4) do |a|
       comments_chunk = application_comments(a.id)
       replies_chunk = []
       comments_chunk.each do |comment|
@@ -84,6 +82,12 @@ class Bamboo
     if file_id && file_id != ''
       application_file(application_id, file_id)
     end
+  end
+
+  def write_file!(file_json)
+    attachment = Attachment.new(file_json)
+    attachment.write!
+    attachment
   end
 
   def download_files!(applications)
@@ -140,6 +144,13 @@ class Bamboo
   def get_json(path, options = {})
     response = get(path, options)
     JSON.parse(response.body)
+  rescue
+    tries_left = options.fetch(:tries_left, 3)
+    if tries_left > 0
+      get_json(path, options.merge(tries_left: tries_left - 1))
+    else
+      puts path
+    end
   end
 
   def request(method, path, options = {})

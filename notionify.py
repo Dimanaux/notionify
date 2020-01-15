@@ -67,12 +67,14 @@ async def process_rows_async():
     cv = client.get_collection_view(view_link)
     rows = cv.build_query().execute()
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
         loop = asyncio.get_event_loop()
         comments_tasks = [loop.run_in_executor(executor, set_row_comments, r) for r in rows]
         attachments_tasks = [loop.run_in_executor(executor, set_row_attachments, r) for r in rows]
 
-        for response in await asyncio.gather(*(comments_tasks + attachments_tasks)):
+        for r in await asyncio.gather(*comments_tasks):
+            pass
+        for r in await asyncio.gather(*attachments_tasks):
             pass
 
 

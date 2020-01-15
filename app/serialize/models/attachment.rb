@@ -12,8 +12,8 @@ class Attachment < Model
     self.application.attachments << self
   end
 
-  def write(parent_dir_path)
-    self.dir = "#{parent_dir_path}/#{self.applicationId}"
+  def write!
+    self.dir = File.expand_path("../../../files/#{applicationId}", File.dirname(__FILE__))
     FileUtils.mkdir_p dir
     self.extension = name.split('.').last
     self.file_name = "#{dir}/#{id}.#{extension}"
