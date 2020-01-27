@@ -15,6 +15,7 @@ class Applicant < Model
         'Role' => application.job.title,
         'Stage' => application.status,
         'Email' => candidate.email,
+        'phoneNumber' => candidate.phoneNumber,
         'Hiring_Manager' => application.job.hiringLead,
         'Attachments' => '',
         'Links' => application.attachments.map(&:absolute_path).join(':'),
@@ -34,7 +35,7 @@ class Applicant < Model
 
   @fields = %I[
     Name Role Stage Email Hiring_Manager Attachments Website Skills Location
-    Employment Source Added CommentsJson Links Status RelPaths
+    Employment Source Added CommentsJson Links Status RelPaths phoneNumber
   ]
 
   class << self
