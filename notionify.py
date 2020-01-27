@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE
 from threading import (Thread, Semaphore)
 from time import sleep
 from argparse import ArgumentParser
+import sys
 
 from notion.client import NotionClient
 from notion.block import BulletedListBlock
