@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE
 from threading import (Thread, Semaphore)
 from time import sleep
 from argparse import ArgumentParser
+import sys
 
 from notion.client import NotionClient
 from notion.block import BulletedListBlock
@@ -12,7 +13,6 @@ from notion.block import HeaderBlock
 
 
 parser = ArgumentParser(description='Add comments, upload files in Notion table.')
-parser.add_argument('--csv', metavar='file.csv', help='.csv file with applicants', required=True)
 parser.add_argument('--token', metavar='token_v2', help='token_v2 cookie from https://www.notion.so', required=True)
 parser.add_argument('--view', metavar='URL', help='link to notion view', required=True)
 args = parser.parse_args(sys.argv[1:])
@@ -98,9 +98,6 @@ def attachments():
     sem = Semaphore(10)
     for r in rows_iter:
         t = Thread(target=set_row_attachments, args=(r,sem))
-        threads.append(t)
-        while len(alive_threads()) > 10:
-            sleep(0.1)
         t.start()
 
 
