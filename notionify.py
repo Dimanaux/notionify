@@ -2,15 +2,26 @@
 
 import json
 from subprocess import Popen, PIPE
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
+from threading import (Thread, Semaphore)
+from time import sleep
+from argparse import ArgumentParser
 
 from notion.client import NotionClient
 from notion.block import BulletedListBlock
 from notion.block import HeaderBlock
 
-token_v2 = '?'
-view_link = '?'
+
+parser = ArgumentParser(description='Add comments, upload files in Notion table.')
+parser.add_argument('--csv', metavar='file.csv', help='.csv file with applicants', required=True)
+parser.add_argument('--token', metavar='token_v2', help='token_v2 cookie from https://www.notion.so', required=True)
+parser.add_argument('--view', metavar='URL', help='link to notion view', required=True)
+args = parser.parse_args(sys.argv[1:])
+
+client = NotionClient(token_v2=args.token)
+cv = client.get_collection_view(args.view)
+rows = cv.build_query().execute()
+
+threads = []
 
 
 def get_attachments(links_line):
@@ -26,7 +37,7 @@ def get_attachments(links_line):
 
 
 def upload(file):
-    process = Popen(["./Main", token_v2, file], stdout=PIPE)
+    process = Popen(["./Main", args.token, file], stdout=PIPE)
     (output, err) = process.communicate()
     exit_code = process.wait()
     return output.decode("utf-8").rstrip("\n")
@@ -36,18 +47,23 @@ def format_comment(comment):
     return '{text}\n__by {author} on {date}__'.format(**comment)
 
 
-def set_row_attachments(row):
+def set_row_attachments(row, sem):
+    sem.acquire()
     try:
         row.attachments = get_attachments(row.relpaths)
     except Exception:
         pass
+    finally:
+        sem.release()
 
 
-def set_row_comments(row):
+def set_row_comments(row, sem):
+    sem.acquire()
     try:
+        if len(row.children) != 0 or row.commentsjson == '{"comments":[]}':
+            return
         comments = json.loads(row.commentsjson)['comments']
         comments.sort(key=lambda d: d['date'])
-
         row.children.add_new(HeaderBlock, title='# Comments')
         parents = {}
         for comment in comments:
@@ -60,27 +76,42 @@ def set_row_comments(row):
                 parents[int(comment['id'])] = parent
     except Exception:
         pass
+    finally:
+        sem.release()
 
 
-async def process_rows_async():
-    client = NotionClient(token_v2=token_v2)
-    cv = client.get_collection_view(view_link)
-    rows = cv.build_query().execute()
+def comments():
+    global threads
+    global rows
+    rows_iter = iter(rows)
+    sem = Semaphore(10)
+    for r in rows_iter:
+        t = Thread(target=set_row_comments, args=(r,sem))
+        threads.append(t)
+        t.start()
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        loop = asyncio.get_event_loop()
-        comments_tasks = [loop.run_in_executor(executor, set_row_comments, r) for r in rows]
-        attachments_tasks = [loop.run_in_executor(executor, set_row_attachments, r) for r in rows]
 
-        for r in await asyncio.gather(*comments_tasks):
-            pass
-        for r in await asyncio.gather(*attachments_tasks):
-            pass
+def attachments():
+    global threads
+    global rows
+    rows_iter = iter(rows)
+    sem = Semaphore(10)
+    for r in rows_iter:
+        t = Thread(target=set_row_attachments, args=(r,sem))
+        threads.append(t)
+        while len(alive_threads()) > 10:
+            sleep(0.1)
+        t.start()
+
+
+ct = Thread(target=comments, args=())
+at = Thread(target=attachments, args=())
 
 
 def main():
-    loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(process_rows_async())
-    loop.run_until_complete(future)
+    ct.start()
+    at.start()
 
-main()
+
+if __name__ == '__main__':
+    main()
