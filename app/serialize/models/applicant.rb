@@ -11,6 +11,7 @@ class Applicant < Model
   def initialize(application)
     candidate = application.candidate
     hash = {
+        'Id' => application.id,
         'Name' => candidate.name,
         'Role' => application.job.title,
         'Stage' => application.status,
@@ -18,24 +19,21 @@ class Applicant < Model
         'phoneNumber' => candidate.phoneNumber,
         'Hiring_Manager' => application.job.hiringLead,
         'Attachments' => '',
-        'Links' => application.attachments.map(&:absolute_path).join(':'),
         'Website' => candidate.websiteUrl,
-        'Skills' => '', # TODO
         'Location' => candidate.location,
         'Employment' => '', # TODO
         'Source' => application.applicationReferences,
         'Added' => application.appliedDate,
-        'Id' => application.id,
         'CommentsJson' => application.comments_hash.to_json,
-        'Status' => application.status,
-        'RelPaths' => application.attachments.map(&:relative_path).join(':')
+        'RelPaths' => application.attachments.map(&:relative_path).join(':'),
+        'rating' => application.rating
     }
     read_from_hash! hash
   end
 
   @fields = %I[
-    Name Role Stage Email Hiring_Manager Attachments Website Skills Location
-    Employment Source Added CommentsJson Links Status RelPaths phoneNumber
+    Id Name Role Stage Email Hiring_Manager Attachments Website Location
+    Added CommentsJson RelPaths phoneNumber rating
   ]
 
   class << self

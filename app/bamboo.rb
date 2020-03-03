@@ -20,7 +20,7 @@ class Bamboo
   def detailed_jobs
     jobs.map { |j| j['id'] }
         .sort.uniq
-        .map { |id| job id }
+        .map { |id| job(id) }
   end
 
   def job(id)

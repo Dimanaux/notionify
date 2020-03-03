@@ -11,25 +11,13 @@ from notion.client import NotionClient
 from notion.block import BulletedListBlock
 from notion.block import HeaderBlock
 
-date_added_to_phones = {}
+id_to_rating = {}
 
-def csv_key(row):
-    return row['Name'] + ';' + row['Role'] + ';' + datetime.fromisoformat(row['Added']).strftime('%Y.%m.%d %H:%M')
-
-
-def notion_key(Name, Role, Added):
-    return Name + ';' + Role + ';' + Added.start.strftime('%Y.%m.%d %H:%M')
-
-
-def set_phone(row, sem):
-    global date_added_to_phones
+def set_rating(row, sem):
+    global id_to_rating
     sem.acquire()
     try:
-        phone = date_added_to_phones[notion_key(row.Name, row.Role, row.Added)]
-        row.Phone = phone
-    except KeyError:
-        phone = date_added_to_phones[notion_key(row.Name.replace('_', '*'), row.Role, row.Added)]
-        row.Phone = phone
+        row.rating_num = id_to_rating[row.ID]
     finally:
         sem.release()
 
@@ -44,7 +32,7 @@ def main():
     with open(args.csv, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            date_added_to_phones[csv_key(row)] = row['phoneNumber']
+            id_to_rating[int(row['Id'])] = int(row['rating'] or '0')
 
     client = NotionClient(token_v2=args.token)
     cv = client.get_collection_view(args.view)
@@ -52,7 +40,7 @@ def main():
 
     sem = Semaphore(10)
     for r in rows:
-        t = Thread(target=set_phone, args=(r, sem))
+        t = Thread(target=set_rating, args=(r, sem))
         t.start()
 
 
